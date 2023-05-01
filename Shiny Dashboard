@@ -9,7 +9,7 @@ library(shinyWidgets)
 library(shinydashboard)
 library(shinythemes)
 
-data <- read.csv("/Volumes/DRAKE STUFF/School/College/Freshman Year/Stat 040/Class_Data/netflix_titles.csv")
+data <- read.csv("class_data/netflix_titles.csv")
 
 
 # making the date column standard
@@ -18,6 +18,11 @@ data2 <- data %>% mutate(date_added=mdy(date_added))
 # Separating year from date
 year <- format(data2$date_added, "%Y")
 
+ratings <- data2 %>% 
+  select(rating) %>% 
+  drop_na() %>% 
+  group_by(rating) %>% 
+  summarise(count = n())
 # data for the linegraph of first tab
 
 lineplotdata <- data2 %>% mutate(year = year) %>%  count(type, year, name = "Number_of_Shows")
@@ -62,102 +67,131 @@ ui <- navbarPage(
   
   
   ##################################################
-  tabPanel("First tab",
-           
-           sidebarLayout(
-             sidebarPanel( plotlyOutput("monthbar")
-             ),
-             
-             mainPanel(
-               fluidRow(
-                 selectInput("country", "Country", choices = as.list((c("All",country_names$country))), width = "40%"),
-                 
-                 plotlyOutput("linegraph1", width = "100%")
-                 
-               )
-             )
-           )
-           
-           
-           
+  tabPanel(
+    "First tab",
+    sidebarLayout(
+      sidebarPanel(
+        plotlyOutput("monthbar")
+      ),
+      mainPanel(
+        fluidRow(
+          selectInput(
+            "country",
+            "Country",
+            choices = c("All", unique(country_names$country)),
+            width = "40%"
+          ),
+          plotlyOutput("linegraph1", width = "100%")
+        )
+      )
+    )
+  ),
+  tabPanel(
+    "Second tab",
+    fluidPage(
+      titlePanel("Netflix Dashboard"),
+      sidebarLayout(
+        sidebarPanel(),
+        mainPanel(
+          fluidRow(
+            column(
+              width = 6,
+              plotlyOutput("piechart")
+            )
+          )
+        )
+      )
+    )
   )
 )
+
+
+server <- function(input, output) {
   
-  server <- function(input, output) {
+  output$piechart <- renderPlotly({
     
-    thematic::thematic_shiny()
+    pie_chart <- plot_ly(ratings, labels = ~rating, values = ~count, type = "pie") %>%
+      layout(title = "Distribution of Movie Ratings",
+             margin = list(l = 50, r = 50, b = 50, t = 50),
+             showlegend = F)
     
-##First Tab##
-##Barplot##
+    pie_chart
+  })
+  
+
+  thematic::thematic_shiny()
+  
+  ##First Tab##
+  ##Barplot##
+  
+  output$monthbar <- renderPlotly({
     
-    output$monthbar <- renderPlotly({
+    
+    p <-  ggplot(datawithmonth, aes(x= month, y= Number_of_Shows)) +
+      geom_bar(aes(fill= month_name), stat= "identity", size = 2)+
+      coord_flip()+
+      theme_minimal()+
+      labs(title = "Number of Shows by Month", x= "Month", y = "")+
+      theme(panel.grid = element_blank(),
+            plot.title = element_text(hjust = 0.5), 
+            panel.background = element_rect(fill="black"), 
+            plot.background = element_rect(fill= "black"), 
+            axis.text.x = element_text(size = 12, face = "bold", colour = "#B19CD9"),
+            text = element_text(colour="white", size =15) )
+    
+    ggplotly(p)  
+    
+  })
+  
+  ##Line Graph##
+  
+  output$linegraph1 <- renderPlotly({
+    
+    if(input$country == "All"){
       
       
-      p <-  ggplot(datawithmonth, aes(x= month, y= Number_of_Shows)) +
-        geom_bar(aes(fill= month_name), stat= "identity", size = 2)+
-        coord_flip()+
+      p <- ggplot(lineplotdata, aes(x = year, group =  type, y = Number_of_Shows, color = type)) +
+        geom_line(size = 1) +
+        geom_point(size = 3)+
+        labs(title ="Number of Movies Produced all over the World", x = "Year", color = "type") +
         theme_minimal()+
-        labs(title = "Number of Shows by Month", x= "Month", y = "")+
         theme(panel.grid = element_blank(),
               plot.title = element_text(hjust = 0.5), 
               panel.background = element_rect(fill="black"), 
               plot.background = element_rect(fill= "black"), 
               axis.text.x = element_text(size = 12, face = "bold", colour = "#B19CD9"),
-              text = element_text(colour="white", size =15) )
-      
-      ggplotly(p)  
-      
-    })
+              text = element_text(colour="white", size =15)) 
+      ggplotly(p)}
     
-##Line Graph##
     
-    output$linegraph1 <- renderPlotly({
-      
-      if(input$country == "All"){
-        
-        
-        p <- ggplot(lineplotdata, aes(x = year, group =  type, y = Number_of_Shows, color = type)) +
-          geom_line(size = 1) +
-          geom_point(size = 3)+
-          labs(title ="Number of Movies Produced all over the World", x = "Year", color = "type") +
-          theme_minimal()+
-          theme(panel.grid = element_blank(),
-                plot.title = element_text(hjust = 0.5), 
-                panel.background = element_rect(fill="black"), 
-                plot.background = element_rect(fill= "black"), 
-                axis.text.x = element_text(size = 12, face = "bold", colour = "#B19CD9"),
-                text = element_text(colour="white", size =15)) 
-        ggplotly(p)}
+    else
       
       
-      else
-        
-        
-      {
-        
-        data5 <- data2 %>% separate_rows(country, sep= ", ") %>% group_by(country) %>% filter(country == input$country)
-        year <- format(data5$date_added, "%Y")
-        lineplotdata <- data5 %>% mutate(year = year) %>%  count(type, year, name = "Number_of_Shows")
-        
-        
-        p <- ggplot(lineplotdata, aes(x = year, group =  type, y = Number_of_Shows, color = type)) +
-          geom_line(size = 1) +
-          geom_point(size = 3)+
-          labs(x = "Year", y = "Amount of movies produced",  color = "type") +
-          theme_minimal()+
-          labs(title =paste("Number of Movies Produced in ", input$country), x = "Year", color = "type") +
-          theme_minimal()+
-          theme(panel.grid = element_blank(),
-                plot.title = element_text(hjust = 0.5), 
-                panel.background = element_rect(fill="black"), 
-                plot.background = element_rect(fill= "black"), 
-                axis.text.x = element_text(size = 12, face = "bold", colour = "#B19CD9"),
-                text = element_text(colour="white", size =15)) 
-        ggplotly(p)
-        
-      }
-    })
-  }
+    {
+      
+      data5 <- data2 %>% separate_rows(country, sep= ", ") %>% group_by(country) %>% filter(country == input$country)
+      year <- format(data5$date_added, "%Y")
+      lineplotdata <- data5 %>% mutate(year = year) %>%  count(type, year, name = "Number_of_Shows")
+      
+      
+      p <- ggplot(lineplotdata, aes(x = year, group =  type, y = Number_of_Shows, color = type)) +
+        geom_line(size = 1) +
+        geom_point(size = 3)+
+        labs(x = "Year", y = "Amount of movies produced",  color = "type") +
+        theme_minimal()+
+        labs(title =paste("Number of Movies Produced in ", input$country), x = "Year", color = "type") +
+        theme_minimal()+
+        theme(panel.grid = element_blank(),
+              plot.title = element_text(hjust = 0.5), 
+              panel.background = element_rect(fill="black"), 
+              plot.background = element_rect(fill= "black"), 
+              axis.text.x = element_text(size = 12, face = "bold", colour = "#B19CD9"),
+              text = element_text(colour="white", size =15)) 
+      ggplotly(p)
+      
+    }
+  })
+}
 
 
 shinyApp(ui = ui, server = server)
