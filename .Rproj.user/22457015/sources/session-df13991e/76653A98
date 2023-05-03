@@ -1,27 +1,26 @@
 {
-    "id": "2AD76C66",
-    "path": null,
+    "id": "76653A98",
+    "path": "C:/Users/orotb/OneDrive - Drake University/STAT 40/ShinyTester/app.R",
     "project_path": null,
     "type": "r_source",
     "hash": "0",
     "contents": "",
-    "dirty": true,
-    "created": 1683120285336.0,
+    "dirty": false,
+    "created": 1683121620635.0,
     "source_on_save": false,
     "relative_order": 4,
     "properties": {
-        "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "200,0",
-        "scrollLine": "187"
+        "cursorPosition": "234,5",
+        "scrollLine": "197"
     },
     "folds": "",
-    "lastKnownWriteTime": 7022061171920299363,
-    "encoding": "",
+    "lastKnownWriteTime": 1683121675,
+    "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1683120827635,
+    "last_content_update": 1683121675356,
     "read_only": false,
     "read_only_alternatives": []
 }
