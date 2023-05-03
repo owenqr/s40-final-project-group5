@@ -9,14 +9,20 @@ library(shinyWidgets)
 library(shinydashboard)
 library(shinythemes)
 
-data <- read.csv("/Volumes/DRAKE STUFF/School/College/Freshman Year/Stat 040/Class_Data/netflix_titles.csv")
+data <- read.csv("class_data/netflix_titles.csv")
 
 #making seperate variables for Movie and TV ratings
-movies$tv_rating <- factor(movies$rating,
-                           levels = c("TV-Y","TV-Y7", "TV-G", "TV-PG", "TV-14", "TV-MA"))
+movie_rating <- data %>%
+  filter(type == "Movie") %>%
+  mutate(rating_level = factor(rating, levels = c("G", "PG", "PG-13","R"))) %>%
+  group_by(rating_level) %>%
+  summarise(count = n())
 
-movies$movie_rating <- factor(movies$rating,
-                              levels = c("G", "PG", "PG-13","R"))
+tv_rating <- data %>%
+  filter(type == "TV Show") %>%
+  mutate(rating_level = factor(rating, levels = c("TV-Y","TV-Y7", "TV-G", "TV-PG", "TV-14", "TV-MA"))) %>%
+  group_by(rating_level) %>%
+  summarise(count = n())
 
 #making the date column standard
 data2 <- data %>% mutate(date_added=mdy(date_added))
@@ -25,13 +31,15 @@ data2 <- data %>% mutate(date_added=mdy(date_added))
 year <- format(data2$date_added, "%Y")
 
 ratings <- data2 %>% 
-  select(rating) %>% 
+  select( rating) %>% 
   drop_na() %>% 
-  group_by(rating) %>% 
+  group_by( rating) %>% 
   summarise(count = n())
 # data for the linegraph of first tab
 
-lineplotdata <- data2 %>% mutate(year = year) %>%  count(type, year, name = "Number_of_Shows")
+lineplotdata <- data2 %>% 
+  mutate(year = year) %>%  
+  count(type, year, name = "Number_of_Shows")
 
 
 
@@ -97,35 +105,29 @@ ui <- navbarPage(
     fluidPage(
       titlePanel("Netflix Dashboard"),
       sidebarLayout(
-        sidebarPanel(),
+        sidebarPanel(
+          radioButtons(
+            "pie_chart_type",
+            "Choose chart type:",
+            choices = c("Movie ratings" = "movie", "TV show ratings" = "tv"),
+            selected = "movie"
+          )
+        ),
         mainPanel(
           fluidRow(
             column(
               width = 6,
-              plotlyOutput("piechart")
+              plotlyOutput("pie_charts")
             )
           )
         )
       )
     )
-  )
+  ),
 )
-
 
 server <- function(input, output) {
   
-  output$piechart <- renderPlotly({
-    
-    pie_chart <- plot_ly(ratings, labels = ~rating, values = ~count, type = "pie") %>%
-      layout(title = "Distribution of Movie Ratings",
-             margin = list(l = 50, r = 50, b = 50, t = 50),
-             showlegend = F)
-    
-    pie_chart
-  })
-  
-  
-  thematic::thematic_shiny()
   
   ##First Tab##
   ##Barplot##
@@ -197,8 +199,43 @@ server <- function(input, output) {
       
     }
   })
+
+  #Second tab
+  output$pie_charts <- renderPlotly({
+    if (input$pie_chart_type == "movie") {
+      p <- plot_ly(data = movie_rating, labels = ~rating_level, values = ~count,
+                   type = "pie",
+                   marker = list(colors = c("#D7191C", "#FDAE61", "#ABDDA4", "#2B83BA")),
+                   hole = 0.6) %>%
+        layout(title = "Distribution of Movie Ratings",
+               margin = list(l = 50, r = 50, t = 50, b = 50),
+               annotations = list(text = paste0("Total Count: ", sum(movie_rating$count)),
+                                  font = list(size = 10),
+                                  showarrow = FALSE,
+                                  x = 0.5, y = 0.5),
+               legend = list(
+                 orientation = "h",
+                 x = 0.5, y = -0.2
+               ))
+    } else if (input$pie_chart_type == "tv") {
+      p <- plot_ly(data = tv_rating, labels = ~rating_level, values = ~count,
+                   type = "pie",
+                   marker = list(colors = c("#D7191C", "#FDAE61", "#ABDDA4", "#2B83BA")),
+                   hole = 0.6) %>%
+        layout(title = "Distribution of TV Show Ratings",
+               margin = list(l = 50, r = 50, t = 50, b = 50),
+               annotations = list(text = paste0("Total Count: ", sum(tv_rating$count)),
+                                  font = list(size = 10),
+                                  showarrow = FALSE,
+                                  x = 0.5, y = 0.5),
+               legend = list(
+                 orientation = "h",
+                 x = 0.5, y = -0.2
+               ))
+    }
+    p
+  })
 }
 
 
 shinyApp(ui = ui, server = server)
-
