@@ -9,13 +9,19 @@ library(shinyWidgets)
 library(shinydashboard)
 library(shinythemes)
 
-data <- read.csv("class_data/netflix_titles.csv")
+data <- read.csv("/Volumes/DRAKE STUFF/School/College/Freshman Year/Stat 040/Class_Data/netflix_titles.csv")
 
+#making seperate variables for Movie and TV ratings
+movies$tv_rating <- factor(movies$rating,
+                           levels = c("TV-Y","TV-Y7", "TV-G", "TV-PG", "TV-14", "TV-MA"))
 
-# making the date column standard
+movies$movie_rating <- factor(movies$rating,
+                              levels = c("G", "PG", "PG-13","R"))
+
+#making the date column standard
 data2 <- data %>% mutate(date_added=mdy(date_added))
 
-# Separating year from date
+#separating year from date
 year <- format(data2$date_added, "%Y")
 
 ratings <- data2 %>% 
@@ -118,7 +124,7 @@ server <- function(input, output) {
     pie_chart
   })
   
-
+  
   thematic::thematic_shiny()
   
   ##First Tab##
@@ -134,10 +140,10 @@ server <- function(input, output) {
       labs(title = "Number of Shows by Month", x= "Month", y = "")+
       theme(panel.grid = element_blank(),
             plot.title = element_text(hjust = 0.5), 
-            panel.background = element_rect(fill="black"), 
-            plot.background = element_rect(fill= "black"), 
+            panel.background = element_rect(fill="white"), 
+            plot.background = element_rect(fill= "white"), 
             axis.text.x = element_text(size = 12, face = "bold", colour = "#B19CD9"),
-            text = element_text(colour="white", size =15) )
+            text = element_text(colour="black", size =15) )
     
     ggplotly(p)  
     
@@ -153,14 +159,14 @@ server <- function(input, output) {
       p <- ggplot(lineplotdata, aes(x = year, group =  type, y = Number_of_Shows, color = type)) +
         geom_line(size = 1) +
         geom_point(size = 3)+
-        labs(title ="Number of Movies Produced all over the World", x = "Year", color = "type") +
+        labs(title ="Number of Movies/Shows Produced all over the World", x = "Year", y = "Amount of Movies/Shows Produced", color = "type") +
         theme_minimal()+
         theme(panel.grid = element_blank(),
               plot.title = element_text(hjust = 0.5), 
-              panel.background = element_rect(fill="black"), 
-              plot.background = element_rect(fill= "black"), 
+              panel.background = element_rect(fill="white"), 
+              plot.background = element_rect(fill= "white"), 
               axis.text.x = element_text(size = 12, face = "bold", colour = "#B19CD9"),
-              text = element_text(colour="white", size =15)) 
+              text = element_text(colour="black", size =15)) 
       ggplotly(p)}
     
     
@@ -177,16 +183,16 @@ server <- function(input, output) {
       p <- ggplot(lineplotdata, aes(x = year, group =  type, y = Number_of_Shows, color = type)) +
         geom_line(size = 1) +
         geom_point(size = 3)+
-        labs(x = "Year", y = "Amount of movies produced",  color = "type") +
+        labs(x = "Year", y = "Amount of Movies/Shows produced", color = "type") +
         theme_minimal()+
-        labs(title =paste("Number of Movies Produced in ", input$country), x = "Year", color = "type") +
+        labs(title =paste("Number of Movies/Shows Produced in ", input$country), x = "Year", y = "Amount of Movies/Shows Produced", color = "type") +
         theme_minimal()+
         theme(panel.grid = element_blank(),
               plot.title = element_text(hjust = 0.5), 
-              panel.background = element_rect(fill="black"), 
-              plot.background = element_rect(fill= "black"), 
+              panel.background = element_rect(fill="white"), 
+              plot.background = element_rect(fill= "white"), 
               axis.text.x = element_text(size = 12, face = "bold", colour = "#B19CD9"),
-              text = element_text(colour="white", size =15)) 
+              text = element_text(colour="black", size =15)) 
       ggplotly(p)
       
     }
