@@ -9,7 +9,7 @@ library(shinyWidgets)
 library(shinydashboard)
 library(shinythemes)
 
-data <- read.csv("class_data/netflix_titles.csv")
+data <- read.csv("/Volumes/DRAKE STUFF/School/College/Freshman Year/Stat 040/Class_Data/netflix_titles.csv")
 
 #making seperate variables for Movie and TV ratings
 movie_rating <- data %>%
@@ -124,6 +124,22 @@ ui <- navbarPage(
       )
     )
   ),
+  tabPanel("Third Tab", 
+           
+           sidebarLayout(
+             
+             sidebarPanel(
+               selectizeInput("dir_name", "Director name", choices = as.list(data6$director),
+                              width = 200)),
+             
+             
+             mainPanel(dataTableOutput("director")
+             )  
+           ),
+           
+           
+           
+  ),
 )
 
 server <- function(input, output) {
@@ -199,7 +215,7 @@ server <- function(input, output) {
       
     }
   })
-
+  
   #Second tab
   output$pie_charts <- renderPlotly({
     if (input$pie_chart_type == "movie") {
@@ -234,6 +250,14 @@ server <- function(input, output) {
                ))
     }
     p
+  })
+
+######Third Tab#######
+  output$director <- renderDataTable({
+    data2 %>% filter(director == input$dir_name) %>% filter(rating !="") %>% count(rating) %>% arrange(desc(n)) %>% 
+      dplyr::rename(Number_of_shows = n, Rating = rating)
+    
+    
   })
 }
 
