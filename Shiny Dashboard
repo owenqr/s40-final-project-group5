@@ -81,6 +81,7 @@ ui <- navbarPage(
   
   
   ##################################################
+  
   tabPanel(
     "First tab",
     sidebarLayout(
@@ -100,6 +101,9 @@ ui <- navbarPage(
       )
     )
   ),
+  
+  ##################################################
+  
   tabPanel(
     "Second tab",
     fluidPage(
@@ -124,6 +128,9 @@ ui <- navbarPage(
       )
     )
   ),
+  
+  ##################################################
+  
   tabPanel("Third Tab", 
            
            sidebarLayout(
@@ -140,10 +147,22 @@ ui <- navbarPage(
            
            
   ),
-)
-
-server <- function(input, output) {
+  ##################################################
   
+  tabPanel("Fourth Tab",
+           
+           selectInput("year", "Year", choices = as.list(unique(year))),
+           
+           tabsetPanel(
+             tabPanel("Barplot by Country",
+                      plotlyOutput("barbycountry", height = 1200)
+             ),
+             tabPanel("Barplot by Category", plotlyOutput("listed", height = 1200))
+           )
+           
+  ),
+)
+server <- function(input, output) {
   
   ##First Tab##
   ##Barplot##
@@ -251,13 +270,54 @@ server <- function(input, output) {
     }
     p
   })
-
-######Third Tab#######
+  
+  ######Third Tab#######
   output$director <- renderDataTable({
     data2 %>% filter(director == input$dir_name) %>% filter(rating !="") %>% count(rating) %>% arrange(desc(n)) %>% 
       dplyr::rename(Number_of_shows = n, Rating = rating)
     
     
+  })
+  
+  ######Fourth Tab######
+  output$barbycountry <- renderPlotly({
+    data_country <- data2 %>% 
+      filter(year == input$year) %>% 
+      separate_rows(country, sep = ", ") %>% 
+      select(country) %>% 
+      drop_na() %>% 
+      count(country, name= "Number_of_Shows") %>% 
+      arrange(desc(Number_of_Shows)) %>% 
+      mutate(country = reorder(country, Number_of_Shows))
+    
+    ggplot(data_country, aes(x = country, y = Number_of_Shows)) +
+      geom_bar(stat = "identity", fill = "#0077b6") +
+      coord_flip() +
+      labs(title = paste("Number of Shows by Country -", input$year),
+           x = "", y = "Number of Shows") +
+      theme_minimal()
+    
+  })
+  
+  
+  ############################### bar plot by category filtered by year #####################################
+  
+  output$listed <- renderPlotly({
+    data_category <- data2 %>% 
+      filter(year == input$year) %>% 
+      separate_rows(listed_in, sep = ", ") %>% 
+      select(listed_in) %>% 
+      drop_na() %>% 
+      count(listed_in, name = "Number_of_Shows") %>% 
+      arrange(desc(Number_of_Shows)) %>% 
+      mutate(listed_in = reorder(listed_in, Number_of_Shows))
+    
+    ggplot(data_category, aes(x = listed_in, y = Number_of_Shows)) +
+      geom_bar(stat = "identity", fill = "#0077b6") +
+      coord_flip() +
+      labs(title = paste("Number of Shows by Category -", input$year),
+           x = "", y = "Number of Shows") +
+      theme_minimal()
   })
 }
 
