@@ -9,20 +9,7 @@ library(shinyWidgets)
 library(shinydashboard)
 library(shinythemes)
 
-data <- read.csv("/Volumes/DRAKE STUFF/School/College/Freshman Year/Stat 040/Class_Data/netflix_titles.csv")
-
-#making seperate variables for Movie and TV ratings
-movie_rating <- data %>%
-  filter(type == "Movie") %>%
-  mutate(rating_level = factor(rating, levels = c("G", "PG", "PG-13","R"))) %>%
-  group_by(rating_level) %>%
-  summarise(count = n())
-
-tv_rating <- data %>%
-  filter(type == "TV Show") %>%
-  mutate(rating_level = factor(rating, levels = c("TV-Y","TV-Y7", "TV-G", "TV-PG", "TV-14", "TV-MA"))) %>%
-  group_by(rating_level) %>%
-  summarise(count = n())
+data <- read.csv("class_data/netflix_titles.csv")
 
 #making the date column standard
 data2 <- data %>% mutate(date_added=mdy(date_added))
@@ -34,6 +21,20 @@ ratings <- data2 %>%
   select( rating) %>% 
   drop_na() %>% 
   group_by( rating) %>% 
+  summarise(count = n())
+
+#making seperate variables for Movie and TV ratings
+movie_rating <- data %>%
+  filter(type == "Movie" & !is.na(rating)) %>%
+  mutate(rating_level = factor(rating, levels = c("G", "PG", "PG-13","R", "NC-17", "UR", "NR"))) %>%
+  group_by(rating_level) %>%
+  summarise(count = n())
+movie_rating <- na.omit(movie_rating)
+
+tv_rating <- data %>%
+  filter(type == "TV Show" & !is.na(rating)) %>%
+  mutate(rating_level = factor(rating, levels = c("TV-Y","TV-Y7", "TV-G", "TV-PG", "TV-14", "TV-MA", "TV-Y7-FV", "NR"))) %>%
+  group_by(rating_level) %>%
   summarise(count = n())
 # data for the linegraph of first tab
 
@@ -81,7 +82,6 @@ ui <- navbarPage(
   
   
   ##################################################
-  
   tabPanel(
     "First tab",
     sidebarLayout(
@@ -101,13 +101,10 @@ ui <- navbarPage(
       )
     )
   ),
-  
-  ##################################################
-  
   tabPanel(
     "Second tab",
     fluidPage(
-      titlePanel("Netflix Dashboard"),
+      titlePanel("Distribution of TV Show and Movies Ratings"),
       sidebarLayout(
         sidebarPanel(
           radioButtons(
@@ -128,9 +125,6 @@ ui <- navbarPage(
       )
     )
   ),
-  
-  ##################################################
-  
   tabPanel("Third Tab", 
            
            sidebarLayout(
@@ -144,11 +138,7 @@ ui <- navbarPage(
              )  
            ),
            
-           
-           
   ),
-  ##################################################
-  
   tabPanel("Fourth Tab",
            
            selectInput("year", "Year", choices = as.list(unique(year))),
@@ -162,9 +152,11 @@ ui <- navbarPage(
            
   ),
 )
+
 server <- function(input, output) {
   
-  ##First Tab##
+  
+##First Tab####
   ##Barplot##
   
   output$monthbar <- renderPlotly({
@@ -186,12 +178,11 @@ server <- function(input, output) {
     
   })
   
-  ##Line Graph##
+##Line Graph##
   
   output$linegraph1 <- renderPlotly({
     
     if(input$country == "All"){
-      
       
       p <- ggplot(lineplotdata, aes(x = year, group =  type, y = Number_of_Shows, color = type)) +
         geom_line(size = 1) +
@@ -207,10 +198,7 @@ server <- function(input, output) {
       ggplotly(p)}
     
     
-    else
-      
-      
-    {
+    else{
       
       data5 <- data2 %>% separate_rows(country, sep= ", ") %>% group_by(country) %>% filter(country == input$country)
       year <- format(data5$date_added, "%Y")
@@ -234,8 +222,9 @@ server <- function(input, output) {
       
     }
   })
+
+#Second tab----
   
-  #Second tab
   output$pie_charts <- renderPlotly({
     if (input$pie_chart_type == "movie") {
       p <- plot_ly(data = movie_rating, labels = ~rating_level, values = ~count,
@@ -243,14 +232,14 @@ server <- function(input, output) {
                    marker = list(colors = c("#D7191C", "#FDAE61", "#ABDDA4", "#2B83BA")),
                    hole = 0.6) %>%
         layout(title = "Distribution of Movie Ratings",
-               margin = list(l = 50, r = 50, t = 50, b = 50),
+               margin = list(l = 70, r = 70, t = 70, b = 70),
                annotations = list(text = paste0("Total Count: ", sum(movie_rating$count)),
                                   font = list(size = 10),
                                   showarrow = FALSE,
                                   x = 0.5, y = 0.5),
                legend = list(
                  orientation = "h",
-                 x = 0.5, y = -0.2
+                 x = 0.5, y = -0.3
                ))
     } else if (input$pie_chart_type == "tv") {
       p <- plot_ly(data = tv_rating, labels = ~rating_level, values = ~count,
@@ -258,28 +247,25 @@ server <- function(input, output) {
                    marker = list(colors = c("#D7191C", "#FDAE61", "#ABDDA4", "#2B83BA")),
                    hole = 0.6) %>%
         layout(title = "Distribution of TV Show Ratings",
-               margin = list(l = 50, r = 50, t = 50, b = 50),
+               margin = list(l = 95, r = 95, t = 95, b = 95),
                annotations = list(text = paste0("Total Count: ", sum(tv_rating$count)),
-                                  font = list(size = 10),
+                                  font = list(size = 9),
                                   showarrow = FALSE,
                                   x = 0.5, y = 0.5),
                legend = list(
                  orientation = "h",
-                 x = 0.5, y = -0.2
-               ))
+                 x = 1, y = 0))
     }
     p
   })
-  
-  ######Third Tab#######
+######Third Tab#######
   output$director <- renderDataTable({
     data2 %>% filter(director == input$dir_name) %>% filter(rating !="") %>% count(rating) %>% arrange(desc(n)) %>% 
       dplyr::rename(Number_of_shows = n, Rating = rating)
     
     
   })
-  
-  ######Fourth Tab######
+######Fourth Tab######
   output$barbycountry <- renderPlotly({
     data_country <- data2 %>% 
       filter(year == input$year) %>% 
