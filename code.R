@@ -39,3 +39,4 @@ pie(tv_chart)
 
 movie_chart <- table(movies$movie_rating)
 pie(movie_chart)
+
